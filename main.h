@@ -1,115 +1,120 @@
-#ifndef _MAIN_H_
-#define _MAIN_H_
+#ifndef _PRINTF_H
+#define _PRINTF_H
 
-/* begin standard C header files */
-#include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
-#include <stdio.h>
+#include <stdlib.h>
 
-/* macros */
+#define OUTPUT_BUF_SIZE 1024
+#define BUF_FLUSH -1
 
-#define BUFSIZE 1024
-#define TRUE (1 == 1)
-#define FALSE !TRUE
-#define LOWHEX 0
-#define UPHEX 1
+#define FIELD_BUF_SIZE 50
 
-/* structs */
-/**
- * struct inventory_s - inventory of common variables needed
- * @fmt: the input format string
- * @i: index to traverse the format string
- * @args: the variadic arguments list of input arguments
- * @buffer: buffer to be written to before writing to stdout
- * @buf_index: index to traverse the buffer, also total chars written
- * @flag: notifies if there was a modifier flag
- * @space: notifies if space was printed
- * @c0: character to be written to buffer
- * @c1: character checking after % character
- * @c2: character to check 2 spaces after % symbol
- * @c3: unused for now, but may become a third specifier
- * @error: indicates error or not (0 no error, 1 error)
- */
-typedef struct inventory_s
-{
-	const char *fmt;
-	int i;
-	va_list *args;
-	char *buffer;
-	int buf_index;
-	int flag;
-	int space;
-	char c0;
-	char c1;
-	char c2;
-	char c3;
-	int error;
-} inventory_t;
+#define NULL_STRING "(null)"
+
+#define PARAMS_INIT {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+#define CONVERT_LOWERCASE	1
+#define CONVERT_UNSIGNED	2
 
 /**
- * struct matches_s - printf specifiers and paired function
- * @ch: the specifier
- * @func: pointer to the conversion specifier function
+ * struct parameters - parameters struct
+ *
+ * @unsign: flag if unsigned value
+ *
+ * @plus_flag: on if plus_flag specified
+ * @space_flag: on if hashtag_flag specified
+ * @hashtag_flag: on if _flag specified
+ * @zero_flag: on if _flag specified
+ * @minus_flag: on if _flag specified
+ *
+ * @width: field width specified
+ * @precision: field precision specified
+ *
+ * @h_modifier: on if h_modifier is specified
+ * @l_modifier: on if l_modifier is specified
+ *
  */
-typedef struct matches_s
+typedef struct parameters
 {
-	char ch;
-	void (*func)(inventory_t *inv);
-} matches_t;
+	unsigned int unsign			: 1;
 
-/* initializing and ending functions */
-int _printf(const char *format, ...);
-inventory_t *build_inventory(va_list *args_list, const char *format);
-int end_func(inventory_t *arg_inv);
+	unsigned int plus_flag		: 1;
+	unsigned int space_flag		: 1;
+	unsigned int hashtag_flag	: 1;
+	unsigned int zero_flag		: 1;
+	unsigned int minus_flag		: 1;
 
-/* custom memory allocation and buffer */
-void *_calloc(unsigned int nmemb, unsigned int size);
-void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size);
-void write_buffer(inventory_t *inv);
-void puts_buffer(inventory_t *inv, char *str);
+	unsigned int width;
+	unsigned int precision;
 
-/* string functions */
-void rev_string(char *s);
+	unsigned int h_modifier		: 1;
+	unsigned int l_modifier		: 1;
+} params_t;
+
+/**
+ * struct specifier - Struct token
+ *
+ * @specifier: format token
+ * @f: The function associated
+ */
+typedef struct specifier
+{
+	char *specifier;
+	int (*f)(va_list, params_t *);
+} specifier_t;
+
+/* _put.c module */
+int _puts(char *str);
+int _putchar(int c);
+
+/* print_functions.c module */
+int print_char(va_list ap, params_t *params);
+int print_int(va_list ap, params_t *params);
+int print_string(va_list ap, params_t *params);
+int print_percent(va_list ap, params_t *params);
+int print_S(va_list ap, params_t *params);
+
+/* number.c module */
+char *convert(long int num, int base, int flags, params_t *params);
+int print_unsigned(va_list ap, params_t *params);
+int print_address(va_list ap, params_t *params);
+
+/* specifier.c module */
+int (*get_specifier(char *s))(va_list ap, params_t *params);
+int get_print_func(char *s, va_list ap, params_t *params);
+int get_flag(char *s, params_t *params);
+int get_modifier(char *s, params_t *params);
+char *get_width(char *s, params_t *params, va_list ap);
+
+/* convert_number.c module */
+int print_hex(va_list ap, params_t *params);
+int print_HEX(va_list ap, params_t *params);
+int print_binary(va_list ap, params_t *params);
+int print_octal(va_list ap, params_t *params);
+
+/* simple_printers.c module */
+int print_from_to(char *start, char *stop, char *except);
+int print_rev(va_list ap, params_t *params);
+int print_rot13(va_list ap, params_t *params);
+
+/* print_number.c module */
+int _isdigit(int c);
 int _strlen(char *s);
-int _strlenconst(const char *s);
-int _putchar(char c);
-void puts_mod(char *str, unsigned int l);
+int print_number(char *str, params_t *params);
+int print_number_right_shift(char *str, params_t *params);
+int print_number_left_shift(char *str, params_t *params);
 
-/* parse and match functionality */
-void (*match_specifier(inventory_t *inv))(inventory_t *inv);
-void parse_specifiers(inventory_t *inv);
+/* params.c module */
+void init_params(params_t *params, va_list ap);
 
-/* hexadecimal */
-void print_hex(inventory_t *inv, unsigned long int n, int hexcase, int size);
-void p_longlowhex(inventory_t *inv);
-void p_longuphex(inventory_t *inv);
-void p_lowhex(inventory_t *inv);
-void p_uphex(inventory_t *inv);
+/* string_fields.c modoule */
+char *get_precision(char *p, params_t *params, va_list ap);
 
-/* integers */
-void print_integers(inventory_t *inv, long int n);
-void p_int(inventory_t *inv);
-void p_longint(inventory_t *inv);
-void print_unsign(inventory_t *inv, unsigned long int n);
-void p_uint(inventory_t *inv);
-void p_ulongint(inventory_t *inv);
+/* _prinf.c module */
+int _printf(const char *format, ...);
 
-/* octals */
-void print_oct(inventory_t *inv, unsigned long int n, int size);
-void p_oct(inventory_t *inv);
-void p_longoct(inventory_t *inv);
-
-/* handles specifier functions */
-void p_char(inventory_t *inv);
-void p_string(inventory_t *inv);
-void p_string_hex(inventory_t *inv);
-void p_pointer(inventory_t *inv);
-void p_rev_string(inventory_t *inv);
-void p_rot13(inventory_t *inv);
-void p_percent(inventory_t *inv);
-void p_binary(inventory_t *inv);
-
-#endif /* end include guard for header files */
+#endif
 
